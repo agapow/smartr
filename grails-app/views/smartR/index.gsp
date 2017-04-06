@@ -4,6 +4,7 @@
 <div id="sr-index" data-ng-app="smartRApp" style="padding: 10px;">
     <h1 style="font-size: 14px">SmartR - Dynamic Data Visualization and Interaction</h1>
     <br>
+<g:formatDate format="yyyy-MM-dd HH:mm:ss" date="${date}"/>
 
     <div align="left">
         <g:select name="sr-workflowSelect"
