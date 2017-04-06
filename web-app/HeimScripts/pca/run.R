@@ -2,9 +2,19 @@ library(jsonlite)
 library(plyr)
 library(reshape2)
 
-main <- function (excludedPatientIDs = integer(), transformation="raw") {
+main <- function (nodeAsVar=FALSE, calcZScore=FALSE) {
+
+    print ("In pca/run.R")
+
     print(as.list(match.call()))
-    output$transformation <- transformation
+
+    print (head (loaded_variables))
+    print (fetch_params)
+
+    save (loaded_variables, file="/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
+    save (fetch_params, file="/homes/pagapow/SmartR/Pca/fetch_params.Rda")
+
+    stop ("this function, it is not finished yet")
 
     df <- buildCrossfilterCompatibleDf(loaded_variables, fetch_params)
     if (transformation == "log2") {

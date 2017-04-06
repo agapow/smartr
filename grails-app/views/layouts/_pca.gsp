@@ -22,6 +22,9 @@
             <fetch-button concept-map="fetch.conceptBoxes"
                           loaded="fetch.loaded"
                           running="fetch.running"
+                          biomarkers="fetch.selectedBiomarkers"
+                          disabled="fetch.button.disabled"
+                          message="fetch.button.message"
                           allowed-cohorts="[1]">
             </fetch-button>
             

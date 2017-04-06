@@ -22,13 +22,21 @@ window.smartRApp.directive('pca', [
             scope.$watch('data', function () {
                 $(vizDiv).empty();
                 if (! $.isEmptyObject(scope.data)) {
-                    createBoxplot(scope, vizDiv);
+                    createPcaplot(scope, vizDiv);
                 }
             });
         }
     };
 
-    function createBoxplot(scope, vizDiv) {
+    function createPcaplot(scope, vizDiv) {
+        // SOME TESTING HACK - DO NOT INCLUDE IN RELASE
+        var debugField = d3.select(root).append('div');
+        debugField.text ("THEIS IS TEST TEXT");
+
+        var debugDataField = d3.select(root).append('div');
+        var debugDataStr = JSON.stringify (scope.data, null, 2);
+        debugDataField.text (debugDataStr);
+
         var cf = crossfilter(scope.data.dataMatrix);
         var byValue = cf.dimension(function(d) { return d.value; });
         var byBioMarker = cf.dimension(function(d) { return d.bioMarker; });
