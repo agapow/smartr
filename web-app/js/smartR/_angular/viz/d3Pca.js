@@ -2,7 +2,7 @@
 
 'use strict';
 
-window.smartRApp.directive('pca', [
+window.smartRApp.directive('pcaPlot', [
     'smartRUtils',
     'rServeService',
     '$rootScope',
