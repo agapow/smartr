@@ -9,27 +9,36 @@ library (plyr)
 
 ### CONSTANTS & DEFINES
 
+# in development or debugging in any environment
+DEV = TRUE
+# being code in R
+RDEV = TRUE
+
 # maximum number of genes to allow
 MAX_GENE_LIST_LEN <- 20
 
 
 ### CODE ###
 
-# just for development
-load ("/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
-load ("/homes/pagapow/SmartR/Pca/fetch_params.Rda")
+if (RDEV) {
+    load ("/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
+    load ("/homes/pagapow/SmartR/Pca/fetch_params.Rda")
+}
+
 
 main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregate.probes=FALSE) {
     # TODO: aggregate probes?
 
-    ## just for development
-    print ("In pca/run.R")
-    print(as.list(match.call()))
-    print (head (loaded_variables))
-    print (fetch_params)
+    ## Dev & debugging:
+    if (DEV) {
+        print ("In pca/run.R")
+        print(as.list(match.call()))
+        print (head (loaded_variables))
+        print (fetch_params)
 
-    save (loaded_variables, file="/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
-    save (fetch_params, file="/homes/pagapow/SmartR/Pca/fetch_params.Rda")
+        save (loaded_variables, file="/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
+        save (fetch_params, file="/homes/pagapow/SmartR/Pca/fetch_params.Rda")
+    }
 
     ## Preconditions & preparation:
     mRNAData <- loaded_variables$highDimensional_n0_s1
@@ -39,7 +48,7 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregate.probes=FALSE) {
 
     ## Main:
     # handle options:
-    if (calculateZScore) {
+    if (calcZScore) {
       # TODO: check for other headers / id columns?
       # TODO: check PROBE.ID is actually there
       mRNAData = ddply (mRNAData, "PROBE.ID", transform, probe.md = median (VALUE, na.rm = TRUE))
@@ -70,7 +79,7 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregate.probes=FALSE) {
     output <- list(
         result_type = 'pca',
         max_gene_list_len = MAX_GENE_LIST_LEN,
-        regLineSlope = regLineSlope
+        points = mRNAData
     )
 
     return (toJSON (output))
