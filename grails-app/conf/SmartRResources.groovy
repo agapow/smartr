@@ -66,8 +66,11 @@ modules = {
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'patientmapper.js']
         // IPA connector
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'ipaconnector.js']
-        // boxplot PMA
+        
+	// boxplot PMA
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'pca.js']
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'pca.js']
+        // waterfall
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'waterfall.js']
     }
 }
