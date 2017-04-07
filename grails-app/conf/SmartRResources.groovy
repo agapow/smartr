@@ -67,10 +67,11 @@ modules = {
         // IPA connector
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'ipaconnector.js']
         
-	// boxplot PMA
+	    // boxplot
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'pca.js']
-        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'pca.js']
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Pca.js']
         // waterfall
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'waterfall.js']
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Waterfall.js']
     }
 }

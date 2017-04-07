@@ -63,7 +63,7 @@ window.smartRApp.directive('pca', [
         };
         Plotly.newPlot(vizDiv, plotData, layout);
 
-        function drawTable (par_elem, table_data, table_class=FALSE) {
+        function drawTable (par_elem, table_data, table_class) {
             /*
             Render a table of data at given element.
 
@@ -78,8 +78,11 @@ window.smartRApp.directive('pca', [
                  }
 
             */
+            // Preconditions & preparation:
+            /* don't know what js engine we're using, so assume no default params */
+            table_class = typeof table_class !== 'undefined' ? table_class : false;
 
-
+            // Main:
             var table_elem = d3.select(par_elem).append('table');
             if (table_class) {
                 table_elem.attr('class', table_class);
