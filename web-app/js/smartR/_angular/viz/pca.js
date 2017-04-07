@@ -62,6 +62,55 @@ window.smartRApp.directive('pca', [
             height: 800
         };
         Plotly.newPlot(vizDiv, plotData, layout);
+
+        function drawTable (par_elem, table_data, table_class=FALSE) {
+            /*
+            Render a table of data at given element.
+
+            This assumes the data is structured thus::
+
+                {
+                    header = ['foo', 'bar', 'baz'],
+                    rows = [
+                        [1, "two", 3.0],
+                        [4, "five", 6.0]
+                    ]
+                 }
+
+            */
+
+
+            var table_elem = d3.select(par_elem).append('table');
+            if (table_class) {
+                table_elem.attr('class', table_class);
+            }
+
+            var thead = table.append('thead');
+            var header = table_data.header;
+            thead.append('tr')
+                .selectAll('th')
+                .data (header)
+                .enter()
+                .append('th')
+                .text (function(d) { return d; }
+            );
+
+            var tbody = table.append('tbody');
+            var rows = table_data.rows;
+            rows.forEach (
+                function (r) {
+                    var currRow = tbody.append (tr);
+                    r.forEach (
+                        function (d) {
+                            var currCell = tbody.append (td).text (d);
+                        }
+                    )
+                }
+            )
+
+            return table_elem;
+        }
+
     }
 }]);
 
