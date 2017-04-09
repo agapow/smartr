@@ -72,5 +72,10 @@ writeRunParams <- function(...) {
 }
 
 
+# a print with sane formatting
+printf <- function(...) cat (sprintf(...))
 
+
+# trim flanking whitespace
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 

@@ -40,6 +40,10 @@
                    <input type="checkbox" ng-model="runAnalysis.params.calcZScore">
                    <span>Calculate z-score on the fly</span>
                </div>
+               <div class="heim-input-field">
+                   <input type="checkbox" ng-model="runAnalysis.params.aggregateProbes">
+                   <span>Aggregate probes</span>
+               </div>
 
            </div>
             <hr class="sr-divider">

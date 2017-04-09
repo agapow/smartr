@@ -6,6 +6,10 @@ library (plyr)
 library (reshape2)
 library (plyr)
 
+SHARED_FXN_DIR <- "web-app/HeimScripts/_shared_functions"
+
+source (paste(remoteScriptDir, "/Generic/utils.R", sep=""))
+
 
 ### CONSTANTS & DEFINES
 
@@ -20,13 +24,15 @@ MAX_GENE_LIST_LEN <- 20
 
 ### CODE ###
 
+## Main:
+
 if (RDEV) {
     load ("/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
     load ("/homes/pagapow/SmartR/Pca/fetch_params.Rda")
 }
 
 
-main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregate.probes=FALSE) {
+main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
     # TODO: aggregate probes?
 
     ## Dev & debugging:
@@ -66,12 +72,93 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregate.probes=FALSE) {
       write.table (mRNAData, zscore.file, quote=F, sep="\t", row.names=F, col.names=T)
     }
 
-    # TODO: ensure htis is apssed
-    if (aggregate.probes) {
+    if (aggregateProbes) {
         # probe aggregation function adapted from dataBuilder.R to heatmap's specific data-formats
         mRNAData <- pca_probe_aggregation (mRNAData, collapseRow.method = "MaxMean",
             collapseRow.selectFewestMissing = TRUE)
     }
+
+    # cleanup data
+    mRNAData$PROBE.ID       <- trim (mRNAData$PROBE.ID)
+    mRNAData$GENE_SYMBOL    <- trim (mRNAData$GENE_SYMBOL)
+    mRNAData$PATIENT.ID     <- trim (mRNAData$PATIENT.ID)
+    mRNAData$SUBSET         <- trim (mRNAData$SUBSET)
+
+    # The PROBE.ID column needs to have the values from GENE_SYMBOL
+    # concatenated as a suffix, but only if the latter does not
+    # contain a private value (which means that the biomarker was
+    # not present in any of the dictionaries)
+    mRNAData$PROBE.ID <- as.character (mRNAData$PROBE.ID)
+    rowsToConcatenate <- grep ("^PRIVATE", mRNAData$GENE_SYMBOL, invert = TRUE)
+    mRNAData$PROBE.ID[rowsToConcatenate] <- paste (mRNAData$PROBE.ID[rowsToConcatenate],
+        mRNAData$GENE_SYMBOL[rowsToConcatenate],sep="_")
+    mRNAData$PROBE.ID <- as.factor (mRNAData$PROBE.ID)
+    groupValues <- levels (mRNAData$PROBE.ID)
+    mRNAData$PROBE.ID <- paste ("X", as.numeric (mRNAData$PROBE.ID), sep="")
+
+    #Grab only the columns we need for doing the melt/cast.
+    mRNAData <- mRNAData[c('PATIENT.ID','VALUE','PROBE.ID')]
+
+    #Melt the data, leaving 2 columns as the grouping fields.
+    meltedData <- melt(mRNAData, id=c("PROBE.ID","PATIENT.ID"))
+
+    #Cast the data into a format that puts the PATIENT.ID in a column.
+    mRNAData <- data.frame(dcast(meltedData, PATIENT.ID ~ PROBE.ID))
+
+    #Make the rownames be the patient nums so we can drop the patient_num column.
+    rownames (mRNAData) <- mRNAData$PATIENT.ID
+
+    printf("rows %d cols %d", nrow(mRNAData), ncol(mRNAData))
+
+    #Drop patient_num column.
+    mRNAData <- subset(mRNAData, select = -c(PATIENT.ID))
+
+    printf("rows %d cols %d PATIENT.ID dropped", nrow(mRNAData), ncol(mRNAData))
+
+    ### for poorly curated data, drop columns where there are one or more missing values
+    ### print(colSums(is.na(mRNAData)))   # print numbers os NA values for each column
+    mRNAData <- subset(mRNAData, select = colSums(is.na(mRNAData))<1)
+
+    printf("rows %d cols %d NA columns dropped", nrow(mRNAData), ncol(mRNAData))
+    if (ncol(mRNAData) == 0) {
+        stop ("The selected cohort has incomplete data for each of your biomarkers.
+            No data is left to plot a PCA with.");
+    }
+
+    ###print(mRNAData)
+
+    printf("Run the PCA Analysis")
+
+    #Run the PCA Analysis
+    pca.results <- prcomp (mRNAData)
+    #print("Completed PCA Analysis")
+
+    #Get the number of components.
+    numberOfComponents <- length(pca.results$sdev)
+    max.pcs.to.show <- min(max.pcs.to.show, numberOfComponents)
+
+    printf("Number of components %d", numberOfComponents)
+
+    # trim number of genes
+    gene_list_len <- length (pca.results$center)
+    if(MAX_GENE_LIST_LEN < gene_list_len) {
+        gene_list_len <- 20
+    }
+
+    #Create a data frame with 1 row per component.
+    component.summary <- data.frame (paste ("PC", 1:numberOfComponents, sep=""))
+
+    #Create a table with Eigen Value and %Variation.
+    component.summary$eigenval <- round(pca.results$sdev[1:numberOfComponents]**2,5)
+    component.summary$percent_var <- round(pca.results$sdev[1:numberOfComponents]**2 / sum(pca.results$sdev**2) * 100,5)
+
+    colnames(component.summary) <- c('PC','eigenval','percent_var')
+
+    write.table(component.summary,"COMPONENTS_SUMMARY.TXT",quote=F,sep="\t",row.names=F,col.names=T)
+
+
+
+
 
 
     ## Postconditions & return:
@@ -83,83 +170,6 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregate.probes=FALSE) {
     )
 
     return (toJSON (output))
-
-
-
-
-    #
-    mRNAData$PROBE.ID       <- gsub("^\\s+|\\s+$", "",mRNAData$PROBE.ID)
-    mRNAData$GENE_SYMBOL    <- gsub("^\\s+|\\s+$", "",mRNAData$GENE_SYMBOL)
-    mRNAData$PATIENT.ID     <- gsub("^\\s+|\\s+$", "",mRNAData$PATIENT.ID)
-    mRNAData$SUBSET         <- gsub("^\\s+|\\s+$", "",mRNAData$SUBSET)
-
-        # The PROBE.ID column needs to have the values from GENE_SYMBOL concatenated as a suffix,
-        # but only if the latter does not contain a private value (which means that the biomarker was not present in any of the dictionaries)
-        mRNAData$PROBE.ID <- as.character(mRNAData$PROBE.ID)
-        rowsToConcatenate <- grep("^PRIVATE", mRNAData$GENE_SYMBOL, invert = TRUE)
-        mRNAData$PROBE.ID[rowsToConcatenate] <- paste(mRNAData$PROBE.ID[rowsToConcatenate], mRNAData$GENE_SYMBOL[rowsToConcatenate],sep="_")
-        mRNAData$PROBE.ID <- as.factor(mRNAData$PROBE.ID)
-        groupValues <- levels(mRNAData$PROBE.ID)
-        mRNAData$PROBE.ID <- paste("X",as.numeric(mRNAData$PROBE.ID),sep="")
-
-        #Grab only the columns we need for doing the melt/cast.
-        mRNAData <- mRNAData[c('PATIENT.ID','VALUE','PROBE.ID')]
-
-        #Melt the data, leaving 2 columns as the grouping fields.
-        meltedData <- melt(mRNAData, id=c("PROBE.ID","PATIENT.ID"))
-
-        #Cast the data into a format that puts the PATIENT.ID in a column.
-        mRNAData <- data.frame(dcast(meltedData, PATIENT.ID ~ PROBE.ID))
-
-        #Make the rownames be the patient nums so we can drop the patient_num column.
-        rownames(mRNAData) <- mRNAData$PATIENT.ID
-
-        print(sprintf("rows %d cols %d", nrow(mRNAData), ncol(mRNAData)))
-
-        #Drop patient_num column.
-        mRNAData <- subset(mRNAData, select = -c(PATIENT.ID))
-
-        print(sprintf("rows %d cols %d PATIENT.ID dropped", nrow(mRNAData), ncol(mRNAData)))
-
-        ### for poorly curated data, drop columns where there are one or more missing values
-        ### print(colSums(is.na(mRNAData)))   # print numbers os NA values for each column
-        mRNAData <- subset(mRNAData, select = colSums(is.na(mRNAData))<1)
-
-        print(sprintf("rows %d cols %d NA columns dropped", nrow(mRNAData), ncol(mRNAData)))
-        if (ncol(mRNAData) == 0) {
-            stop ("The selected cohort has incomplete data for each of your biomarkers.
-                No data is left to plot a PCA with.");
-        }
-
-        ###print(mRNAData)
-
-        print("Run the PCA Analysis")
-        #Run the PCA Analysis
-        pca.results <- prcomp (mRNAData)
-        #print("Completed PCA Analysis")
-
-        #Get the number of components.
-        numberOfComponents <- length(pca.results$sdev)
-        max.pcs.to.show <- min(max.pcs.to.show, numberOfComponents)
-
-        print(sprintf("Number of components %d", numberOfComponents))
-
-        # trim number of genes
-        gene_list_len <- length (pca.results$center)
-        if(MAX_GENE_LIST_LEN < gene_list_len) {
-            gene_list_len <- 20
-        }
-
-        #Create a data frame with 1 row per component.
-        component.summary <- data.frame (paste ("PC", 1:numberOfComponents, sep=""))
-
-        #Create a table with Eigen Value and %Variation.
-        component.summary$eigenval <- round(pca.results$sdev[1:numberOfComponents]**2,5)
-        component.summary$percent_var <- round(pca.results$sdev[1:numberOfComponents]**2 / sum(pca.results$sdev**2) * 100,5)
-
-        colnames(component.summary) <- c('PC','eigenval','percent_var')
-
-        write.table(component.summary,"COMPONENTS_SUMMARY.TXT",quote=F,sep="\t",row.names=F,col.names=T)
 
         rotationFrame <- data.frame(pca.results$rotation)
 

@@ -31,11 +31,11 @@ window.smartRApp.directive('pcaPlot', [
         }
     };
 
-    function createPcaPlot(scope, vizDiv) {
+    function createPcaPlot(scope, root) {
         console.log("in createPcaPlot in d3Pca")
         // SOME TESTING HACK - DO NOT INCLUDE IN RELASE
         var debugField = d3.select(root).append('div');
-        debugField.text ("THEIS IS TEST TEXT");
+        debugField.text ("in createPcaPlot in d3Pca");
 
         var debugDataField = d3.select(root).append('div');
         var debugDataStr = JSON.stringify (scope.data, null, 2);

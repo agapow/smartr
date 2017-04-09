@@ -26,7 +26,8 @@ window.smartRApp.controller('PcaController', [
         $scope.runAnalysis = {
             params: {
                 nodeAsVar: false,
-                calcZScore: false
+                calcZScore: false,
+                aggregateProbes: false
             },
             disabled: true,
             running: false,
