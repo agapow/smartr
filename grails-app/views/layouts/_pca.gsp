@@ -27,7 +27,7 @@
                           message="fetch.button.message"
                           allowed-cohorts="[1]">
             </fetch-button>
-            
+
         </workflow-tab>
 
         <workflow-tab tab-name="Run Analysis" disabled="runAnalysis.disabled">
@@ -51,7 +51,7 @@
             </run-button>
             <br/>
             <br/>
-            <boxplot data="runAnalysis.scriptResults"></boxplot>
+            <pca-plot data="runAnalysis.scriptResults"></boxplot>
         </workflow-tab>
 
     </tab-container>
