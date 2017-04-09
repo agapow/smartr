@@ -1,5 +1,5 @@
 <script type="text/ng-template" id="waterfall">
-<div ng-controller="WaterfallController as waterfallconn">
+<div ng-controller="WaterfallController">
 
     <tab-container>
         %{--========================================================================================================--}%

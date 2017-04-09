@@ -2,7 +2,7 @@
 
 'use strict';
 
-window.smartRApp.directive('pca', [
+window.smartRApp.directive('waterfallPlot', [
     'smartRUtils',
     'rServeService',
     '$rootScope',
@@ -13,7 +13,7 @@ window.smartRApp.directive('pca', [
         scope: {
             data: '='
         },
-        templateUrl: $rootScope.smartRPath +  '/js/smartR/_angular/templates/pca.html',
+        templateUrl: $rootScope.smartRPath +  '/js/smartR/_angular/templates/waterfall.html',
         link: function (scope, element) {
             var vizDiv = element.children()[0];
             /**
@@ -31,7 +31,7 @@ window.smartRApp.directive('pca', [
     function createWaterfallPlot(scope, vizDiv) {
         // SOME TESTING HACK - DO NOT INCLUDE IN RELASE
         var debugField = d3.select(root).append('div');
-        debugField.text ("THEIS IS TEST TEXT");
+        debugField.text ("in createWaterfallPlot in d3Waterfall");
 
         var debugDataField = d3.select(root).append('div');
         var debugDataStr = JSON.stringify (scope.data, null, 2);

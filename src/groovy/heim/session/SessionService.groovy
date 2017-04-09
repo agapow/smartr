@@ -137,7 +137,6 @@ class SessionService implements DisposableBean {
     UUID createTask(Map<String, Object> arguments,
                     UUID sessionId,
                     String taskType) {
-        println("Helloooooo")
         println(arguments.toMapString())
         println(taskType)
         doWithSession(sessionId) {

@@ -3,11 +3,6 @@ library(plyr)
 library(reshape2)
 
 main <- function(excludedPatientIDs = integer(), transformation="raw") {
-
-    save (loaded_variables, file="/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
-    save (fetch_params, file="/homes/pagapow/SmartR/Pca/fetch_params.Rda")
-
-
     output <- list()
     output$transformation <- transformation
 

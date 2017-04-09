@@ -1003,7 +1003,8 @@ window.smartRApp.directive('lineGraph', [
                                 ' biomarker-' + smartRUtils.makeSafeForCSS(d.bioMarker) +
                                 ' subset-' + d.subset;
                         })
-                        .style('fill', function(d) { return iconGen(d.bioMarker).fill; })
+                        .style('fill', function(d) { //noinspection JSUnresolvedFunction
+                            return iconGen(d.bioMarker).fill; })
                         .on('mouseover', function(d) {
                             var html = '';
                             for (var key in d) {
@@ -1040,7 +1041,8 @@ window.smartRApp.directive('lineGraph', [
                         });
 
                     // UPDATE polygon
-                    icon.attr('points', function(d) { return iconGen(d.bioMarker).shape(ICON_SIZE - 2); }) // -2 for better fit
+                    icon.attr('points', function(d) { //noinspection JSUnresolvedFunction
+                        return iconGen(d.bioMarker).shape(ICON_SIZE - 2); }) // -2 for better fit
                         .attr('transform', function(d) {
                             var innerIconRow = iconPlacement[d.bioMarker];
                             return 'translate(' + (x(d.timeInteger) - ICON_SIZE / 2) + ',' + (innerIconRow * ICON_SIZE + 1) + ')';
@@ -1085,6 +1087,7 @@ window.smartRApp.directive('lineGraph', [
                     return;
                 }
                 tmpByType.filterExact('categoric');
+                //noinspection JSUnresolvedFunction
                 var iconCache = iconGen();
                 var legendData = Object.keys(iconCache).map(function(bioMarker) {
                     tmpByBioMarker.filterExact(bioMarker);

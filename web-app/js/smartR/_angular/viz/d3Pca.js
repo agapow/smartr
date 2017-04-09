@@ -1,4 +1,4 @@
-//# sourceURL=d3pca.js
+//# sourceURL=d3Pca.js
 
 'use strict';
 
@@ -17,6 +17,7 @@ window.smartRApp.directive('pcaPlot', [
         },
         templateUrl: $rootScope.smartRPath +  '/js/smartR/_angular/templates/pca.html',
         link: function (scope, element) {
+            console.log("tataata")
             var vizDiv = element.children()[0];
             /**
              * Watch data model (which is only changed by ajax calls when we want to (re)draw everything)
@@ -31,6 +32,7 @@ window.smartRApp.directive('pcaPlot', [
     };
 
     function createPcaPlot(scope, vizDiv) {
+        console.log("in createPcaPlot in d3Pca")
         // SOME TESTING HACK - DO NOT INCLUDE IN RELASE
         var debugField = d3.select(root).append('div');
         debugField.text ("THEIS IS TEST TEXT");
