@@ -1,4 +1,4 @@
-//# sourceURL=plotlyBoxplot.js
+//# sourceURL=d3Waterfall.js
 
 'use strict';
 
@@ -22,13 +22,13 @@ window.smartRApp.directive('pca', [
             scope.$watch('data', function () {
                 $(vizDiv).empty();
                 if (! $.isEmptyObject(scope.data)) {
-                    createPcaplot(scope, vizDiv);
+                    createWaterfallPlot(scope, vizDiv);
                 }
             });
         }
     };
 
-    function createPcaplot(scope, vizDiv) {
+    function createWaterfallPlot(scope, vizDiv) {
         // SOME TESTING HACK - DO NOT INCLUDE IN RELASE
         var debugField = d3.select(root).append('div');
         debugField.text ("THEIS IS TEST TEXT");

@@ -51,7 +51,7 @@
             </run-button>
             <br/>
             <br/>
-            <pca-plot data="runAnalysis.scriptResults"></boxplot>
+            <pca-plot data="runAnalysis.scriptResults"></pca-plot>
         </workflow-tab>
 
     </tab-container>

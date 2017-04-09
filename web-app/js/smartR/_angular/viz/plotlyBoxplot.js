@@ -26,7 +26,7 @@ window.smartRApp.directive('boxplot', [
                 }
             });
         }
-    };
+    }; 
 
     function createBoxplot(scope, vizDiv) {
         var cf = crossfilter(scope.data.dataMatrix);
