@@ -10,7 +10,7 @@
                          concept-group="fetch.conceptBoxes.highDimensional"
                          type="HD"
                          min="1"
-                         max="-1"
+                         max="1"
                          label="High Dimensional Variables"
                          tooltip="Select a high dimensional variable for PCA analysis.">
             </concept-box>

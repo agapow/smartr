@@ -19,7 +19,7 @@
             <fetch-button concept-map="fetch.conceptBoxes"
                           loaded="fetch.loaded"
                           running="fetch.running"
-                          allowed-cohorts="[1,2]">
+                          allowed-cohorts="[1]">
             </fetch-button>
         </workflow-tab>
 
@@ -32,18 +32,14 @@
                 <fieldset class="waterfall-params">
                     <br>
                     <label for="gsp-waterfall-low-check">Low Range </label>
-                    <select id="gsp-waterfall-low-check" ng-model="runAnalysis.params.lowRangeOperator">
-                        <option value="&lt;" selected="selected">&lt;</option>
-                        <option value="&lt;=">&lt;=</option>
-                    </select>
-                    <input id="gsp-waterfall-low-txt-identifier" ng-model="runAnalysis.params.lowRangeValue">
+                    <input id="gsp-waterfall-low-txt-identifier"
+                       ng-pattern="-?\d+(?:\.\d+)?"
+                       ng-model="runAnalysis.params.lowRangeValue">
                     <br>
                     <label for="gsp-waterfall-high-check">High Range </label>
-                    <select id="gsp-waterfall-high-check" ng-model="runAnalysis.params.highRangeOperator">
-                        <option value="&gt;" selected="selected">&gt;</option>
-                        <option value="&gt;=">&gt;=</option>
-                    </select>
-                    <input id="gsp-waterfall-high-txt-identifier" ng-model="runAnalysis.params.highRangeValue">
+                    <input id="gsp-waterfall-high-txt-identifier"
+                       ng-pattern="\d+"
+                       ng-model="runAnalysis.params.highRangeValue">
                     <br><br>
                 </fieldset>
             </div>
@@ -55,7 +51,7 @@
                         running="runAnalysis.running">
             </run-button>
             <capture-plot-button filename="waterfall.svg" target="waterfall-plot"></capture-plot-button>
-            <waterfall-plot data="runAnalysis.scriptResults" width="1500" height="1500"></waterfall-plot>
+            <waterfall-plot data="runAnalysis.scriptResults"></waterfall-plot>
         </workflow-tab>
 
     </tab-container>

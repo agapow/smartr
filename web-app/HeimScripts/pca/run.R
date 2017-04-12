@@ -4,310 +4,202 @@
 library (jsonlite)
 library (plyr)
 library (reshape2)
-library (plyr)
+library(WGCNA)
 
-SHARED_FXN_DIR <- "web-app/HeimScripts/_shared_functions"
-
-source (paste(remoteScriptDir, "/Generic/utils.R", sep=""))
+# TODO: ugh - cannot get this to work consistently across the web & desktop
+# SHARED_FXN_DIR <- "web-app/HeimScripts/_shared_functions"
+# source (paste(remoteScriptDir, "/Generic/utils.R", sep=""))
 
 
 ### CONSTANTS & DEFINES
 
-# in development or debugging in any environment
-DEV = TRUE
-# being code in R
-RDEV = TRUE
+# in development? FALSE, "web" or "r"
+DEV = "web"
 
 # maximum number of genes to allow
 MAX_GENE_LIST_LEN <- 20
 
+# how many components to display
+MAX_DISPLAY_COMPONENTS <- 10
+
 
 ### CODE ###
 
+## Utils:
+# TODO: how we reliably source the shared components in R and web?
+
+# a print with sane formatting
+printf <- function(...) cat (sprintf(...))
+
+
+# trim flanking whitespace
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+
+
+
 ## Main:
-
-if (RDEV) {
-    load ("/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
-    load ("/homes/pagapow/SmartR/Pca/fetch_params.Rda")
-}
-
 
 main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
     # TODO: aggregate probes?
 
     ## Dev & debugging:
-    if (DEV) {
-        print ("In pca/run.R")
-        print(as.list(match.call()))
-        print (head (loaded_variables))
-        print (fetch_params)
-
+    ## Dev:
+    if (DEV == 'web') {
+        # if running through web, save the data
         save (loaded_variables, file="/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
         save (fetch_params, file="/homes/pagapow/SmartR/Pca/fetch_params.Rda")
     }
+    if (DEV == 'r') {
+        # if running through r, load the data
+        save (loaded_variables, file="/homes/pagapow/SmartR/Pca/loaded_variables.Rda")
+        save (fetch_params, file="/homes/pagapow/SmartR/Pca/fetch_params.Rda")
+    }
+    if (DEV != FALSE) {
+        print ("In development for pca/run.R")
+        print ("Working directory:")
+        print (getwd())
+        print ("Files:")
+        print (list.files())
+        print ("Fxn call:")
+        print (print (match.call()))
+        print ("Params:")
+        print (head (loaded_variables))
+        print (fetch_params)
+    }
+
+    print (nodeAsVar)
+    print (mode(nodeAsVar))
 
     ## Preconditions & preparation:
-    mRNAData <- loaded_variables$highDimensional_n0_s1
-    if (nrow (mRNAData) == 0) {
-        stop ("The input data is empty: either the specified subset has no matching data in the selected node, or the gene/pathway is not present.");
+    exprData <- loaded_variables$highDimensional_n0_s1
+    if (nrow (exprData) == 0) {
+        stop ("The input data is empty: either the specified subset
+            has no matching data in the selected node, or the
+            gene/pathway is not present.");
     }
 
     ## Main:
+    # NOTE: at this point, the data columns are:
+    # Row.Label, Bio.marker, [patients X1, X2, ...]
+
     # handle options:
-    if (calcZScore) {
-      # TODO: check for other headers / id columns?
-      # TODO: check PROBE.ID is actually there
-      mRNAData = ddply (mRNAData, "PROBE.ID", transform, probe.md = median (VALUE, na.rm = TRUE))
-      mRNAData = ddply (mRNAData, "PROBE.ID", transform, probe.sd = sd (VALUE, na.rm = TRUE))
-      mRNAData$VALUE = with (mRNAData, ifelse (probe.sd == 0, 0,
-        (mRNAData$VALUE - mRNAData$probe.md) / mRNAData$probe.sd))
-      mRNAData$VALUE = with (mRNAData,
-        ifelse (VALUE > 2.5, 2.5,
-        ifelse (VALUE < -2.5, -2.5, VALUE)
-        )
-      )
-      mRNAData$VALUE = round (mRNAData$VALUE, 9)
-      mRNAData$probe.md = NULL
-      mRNAData$probe.sd = NULL
-      write.table (mRNAData, zscore.file, quote=F, sep="\t", row.names=F, col.names=T)
-    }
-
     if (aggregateProbes) {
-        # probe aggregation function adapted from dataBuilder.R to heatmap's specific data-formats
-        mRNAData <- pca_probe_aggregation (mRNAData, collapseRow.method = "MaxMean",
-            collapseRow.selectFewestMissing = TRUE)
+        exprData <- pca_probe_aggregation (exprData,
+            collapseRow.method = "MaxMean",
+            collapseRow.selectFewestMissing=TRUE
+        )
     }
 
-    # cleanup data
-    mRNAData$PROBE.ID       <- trim (mRNAData$PROBE.ID)
-    mRNAData$GENE_SYMBOL    <- trim (mRNAData$GENE_SYMBOL)
-    mRNAData$PATIENT.ID     <- trim (mRNAData$PATIENT.ID)
-    mRNAData$SUBSET         <- trim (mRNAData$SUBSET)
+    if (calcZScore) {
+        # TODO: check for other headers / id columns or consistent in SmartR?
 
-    # The PROBE.ID column needs to have the values from GENE_SYMBOL
-    # concatenated as a suffix, but only if the latter does not
-    # contain a private value (which means that the biomarker was
-    # not present in any of the dictionaries)
-    mRNAData$PROBE.ID <- as.character (mRNAData$PROBE.ID)
-    rowsToConcatenate <- grep ("^PRIVATE", mRNAData$GENE_SYMBOL, invert = TRUE)
-    mRNAData$PROBE.ID[rowsToConcatenate] <- paste (mRNAData$PROBE.ID[rowsToConcatenate],
-        mRNAData$GENE_SYMBOL[rowsToConcatenate],sep="_")
-    mRNAData$PROBE.ID <- as.factor (mRNAData$PROBE.ID)
-    groupValues <- levels (mRNAData$PROBE.ID)
-    mRNAData$PROBE.ID <- paste ("X", as.numeric (mRNAData$PROBE.ID), sep="")
+        # need to move into a more useful format:
+        # Row.Label, Bio.marker, PatientID, Value
+        exprData <- melt (rna_data, c('Row.Label', 'Bio.marker'),
+            variable.name="PatientID", value.name="Value")
 
-    #Grab only the columns we need for doing the melt/cast.
-    mRNAData <- mRNAData[c('PATIENT.ID','VALUE','PROBE.ID')]
+        exprData <- ddply (exprData, "Row.Label", transform, probe.md=median (Value, na.rm = TRUE))
+        exprData <- ddply (exprData, "Row.Label", transform, probe.sd=sd (Value, na.rm = TRUE))
 
-    #Melt the data, leaving 2 columns as the grouping fields.
-    meltedData <- melt(mRNAData, id=c("PROBE.ID","PATIENT.ID"))
+        exprData$Value = with (exprData, ifelse (probe.sd == 0, 0,
+            (exprData$Value - exprData$probe.md) / exprData$probe.sd))
+            exprData$Value = with (exprData,
+                ifelse (Value > 2.5, 2.5,
+                ifelse (Value < -2.5, -2.5, Value)
+            )
+        )
+        exprData$Value = round (exprData$Value, 9)
+        exprData$probe.md = NULL
+        exprData$probe.sd = NULL
+    }
 
-    #Cast the data into a format that puts the PATIENT.ID in a column.
-    mRNAData <- data.frame(dcast(meltedData, PATIENT.ID ~ PROBE.ID))
-
-    #Make the rownames be the patient nums so we can drop the patient_num column.
-    rownames (mRNAData) <- mRNAData$PATIENT.ID
-
-    printf("rows %d cols %d", nrow(mRNAData), ncol(mRNAData))
-
-    #Drop patient_num column.
-    mRNAData <- subset(mRNAData, select = -c(PATIENT.ID))
-
-    printf("rows %d cols %d PATIENT.ID dropped", nrow(mRNAData), ncol(mRNAData))
-
-    ### for poorly curated data, drop columns where there are one or more missing values
-    ### print(colSums(is.na(mRNAData)))   # print numbers os NA values for each column
-    mRNAData <- subset(mRNAData, select = colSums(is.na(mRNAData))<1)
-
-    printf("rows %d cols %d NA columns dropped", nrow(mRNAData), ncol(mRNAData))
-    if (ncol(mRNAData) == 0) {
+    # for poorly curated data, drop columns where there are one or more missing values
+    exprData <- subset (exprData, select = colSums (is.na(exprData))<1)
+    printf ("rows %d cols %d NA columns dropped", nrow(exprData), ncol(exprData))
+    if (ncol (exprData) == 0) {
         stop ("The selected cohort has incomplete data for each of your biomarkers.
             No data is left to plot a PCA with.");
     }
 
-    ###print(mRNAData)
+    # actually do the analysis, need purely numeric matrix
+    rownames (exprData) <- paste (exprData$Row.Label, exprData$Bio.marker, sep='_')
+    exprData$Row.Label <- NULL
+    exprData$Bio.marker <- NULL
+    print ("Doing the actual analysis")
+    print (exprData)
+    pca_results <- prcomp (exprData, center=TRUE, scale=TRUE)
 
-    printf("Run the PCA Analysis")
-
-    #Run the PCA Analysis
-    pca.results <- prcomp (mRNAData)
-    #print("Completed PCA Analysis")
-
-    #Get the number of components.
-    numberOfComponents <- length(pca.results$sdev)
-    max.pcs.to.show <- min(max.pcs.to.show, numberOfComponents)
-
-    printf("Number of components %d", numberOfComponents)
+    # post-analysis:
+    # get the number of components.
+    numberOfComponents <- length (pca_results$sdev)
+    print ("Number of components:")
+    print (numberOfComponents)
+    max_pcs_to_show <- min (MAX_DISPLAY_COMPONENTS, numberOfComponents)
 
     # trim number of genes
-    gene_list_len <- length (pca.results$center)
-    if(MAX_GENE_LIST_LEN < gene_list_len) {
-        gene_list_len <- 20
-    }
+    gene_list_len <- min (MAX_GENE_LIST_LEN, length (pca_results$center))
 
     #Create a data frame with 1 row per component.
-    component.summary <- data.frame (paste ("PC", 1:numberOfComponents, sep=""))
-
     #Create a table with Eigen Value and %Variation.
-    component.summary$eigenval <- round(pca.results$sdev[1:numberOfComponents]**2,5)
-    component.summary$percent_var <- round(pca.results$sdev[1:numberOfComponents]**2 / sum(pca.results$sdev**2) * 100,5)
-
-    colnames(component.summary) <- c('PC','eigenval','percent_var')
-
-    write.table(component.summary,"COMPONENTS_SUMMARY.TXT",quote=F,sep="\t",row.names=F,col.names=T)
-
-
-
-
-
+    component_summary <- data.frame (paste ("PC", 1:numberOfComponents, sep=""))
+    component_summary$Eigenvalue <- round (pca_results$sdev[1:numberOfComponents]**2,5)
+    component_summary$Percent_variance <- round (pca_results$sdev[1:numberOfComponents]**2 / sum(pca_results$sdev**2) * 100,5)
+    colnames (component_summary) <- c('Component','Eigenvalue','Percent_variance')
 
     ## Postconditions & return:
     # create json and return
+    # Note: can't JSONify the whole prcomp result
     output <- list(
-        result_type = 'pca',
+        analysis = 'pca',
+        data_name = fetch_params$ontologyTerms$highDimensional_n0$name,
+        data_fullname = fetch_params$ontologyTerms$highDimensional_n0$fullName,
+
         max_gene_list_len = MAX_GENE_LIST_LEN,
-        points = mRNAData
+        component_summary = component_summary,
+        max_pcs_to_show = max_pcs_to_show,
+        sdev = pca_results$sdev,
+        numberOfComponents = length (pca_results$sdev),
+        rotation = pca_results$rotation,
+        sdev = pca_results$sdev
     )
 
-    return (toJSON (output))
-
-        rotationFrame <- data.frame(pca.results$rotation)
-
-        f <- function(i,gene_list_len) {
-            #Form the file name.
-            currentFile <- paste('GENELIST',i,'.TXT',sep="")
-
-            #Create the current data frame from the gene names and value columns.
-            currentData <- data.frame(rownames(rotationFrame),round(rotationFrame[,i],3))
-
-            colnames(currentData) <- c('GENE_SYMBOL','VALUE')
-
-            #Reorder the genes based on decreasing absolute value of the value column.
-            currentData <- currentData[order(abs(currentData$VALUE),decreasing = TRUE),]
-
-            #Pull only the records we are interested in.
-            currentData <- currentData[1:gene_list_len,]
-            currentData$GENE_SYMBOL <- groupValues[as.numeric(sub("^X","",currentData$GENE_SYMBOL))]
-
-            #Write the list to a file.
-            write.table(currentData,currentFile,quote=F,sep="\t",row.names=F,col.names=F)
-        }
-
-        sapply(1:max.pcs.to.show, f, gene_list_len)
-
-        #Finally create the Scree plot.
-        plot(pca.results,type="lines", main="Scree Plot", npcs = max.pcs.to.show)
-        title(xlab = "Component")
-
-        dev.off()
-
-        max.toplot = min(3,numberOfComponents)
-    	#Creates the plot of observations
-    	scores <- as.data.frame(pca.results$x)
-    	scores[,"subset"] <- sub("S2", "Subset 2", sub("S1", "Subset 1", substr(rownames(scores),0,2)))
-    	for (i in 1:2){
-        	    if(i < max.toplot) {
-    	    	 for(j in (i+1):max.toplot){
-    	      	        print(sprintf("observations plot %d v %d", i, j))
-    			tmp <- ggplot(data=scores, aes_string(x=paste("PC", i, sep=""), y=paste("PC", j, sep="")))
-    			tmp <- tmp +geom_hline(yintercept=0, colour="gray65")
-    			tmp <- tmp +geom_vline(xintercept=0, colour="gray65")
-    			tmp <- tmp + geom_point(aes(colour=subset), size=3)
-    			tmp <- tmp + labs(title="Plot of observations")
-    			tmp <- tmp+ scale_color_manual("Subsets", breaks = c("Subset 1", "Subset 2"), values=c("orange", "yellow"))
-    			CairoPNG(file=paste("PCA_observations_", i, "_", j, ".png",sep=""),width=600,height=600)
-    			print (tmp)
-    			dev.off()
-    		}
-    	    }
-    	}
-
-    	#Creates the circle of correlations
-    	for (i in 1:2){
-    	    if (i < max.toplot) {
-    	        for(j in (i+1):max.toplot){
-    	      	        print(sprintf("circle plot %d v %d", i, j))
-    			corcir=circle(c(0,0), npoints=100)
-    			correlations=as.data.frame(cor(mRNAData, pca.results$x))
-    			arrows=data.frame(genes=rownames(correlations), x1=rep(0, length(pca.results$center)), y1=rep(0,length(pca.results$center)), x2=correlations[,paste("PC", i, sep="")], y2=correlations[,paste("PC", j, sep="")])
-    			arrows$genes <- groupValues[as.numeric(sub("^X","",arrows$genes))]
-
-    			tmp <- ggplot()
-    			tmp <- tmp + geom_path(data=corcir, aes(x=x, y=y), colour="gray65")
-    			tmp <- tmp + geom_segment(data=arrows, aes(x=x1, y=y1, xend=x2, yend=y2), colour="gray65")
-    			tmp <- tmp + geom_text(data=arrows, aes(x=x2, y=y2, label=genes), size = 4, vjust=1)
-    			tmp <- tmp + geom_hline(yintercept=0, colour="gray65")
-    			tmp <- tmp + geom_vline(xintercept=0, colour="gray65")
-    			tmp <- tmp + xlim(-1.1,1.1) + ylim(-1.1,1.1)
-    			tmp <- tmp + labs(x=paste("PC", i, " axis", sep=""), y=paste("PC", j, " axis", sep=""))
-    			tmp <- tmp + labs(title="Circle of correlations")
-    			CairoPNG(file=paste("PCA_circle_correlations_", i, "_", j, ".png",sep=""),width=600,height=600)
-    			print (tmp)
-    			dev.off()
-    		}
-    	    }
-    	}
-    }
+    return (toJSON (output))   	
+}
 
 
-pca_probe_aggregation <- function (mRNAData, collapseRow.method, collapseRow.selectFewestMissing, output.file = "aggregated_data.txt") {
-        library(WGCNA)
+pca_probe_aggregation <- function (exprData, collapseRow.method,
+        collapseRow.selectFewestMissing, output.file="aggregated_data.txt") {
 
-        #Cast the data into a format that puts the PATIENT_NUM in a column
-        castedData <- data.frame(dcast(mRNAData, PROBE.ID + GENE_SYMBOL ~ PATIENT.ID, value.var = "VALUE"))
+    #Create a unique identifier column and row names
+    castedData$UNIQUE_ID <- paste (castedData$Bio.marker, castedData$Row.Label, sep="_")
+    rownames (castedData) = castedData$UNIQUE_ID
 
-        #Create a unique identifier column.
-        castedData$UNIQUE_ID <- paste(castedData$GENE_SYMBOL,castedData$PROBE.ID,sep="")
+    #Run the collapse on a subset of the data by removing some columns.
+    finalData <- collapseRows (
+        subset (castedData, select = -c(Bio.marker, Row.Label, UNIQUE_ID)),
+        rowGroup = castedData$Bio.marker,
+        rowID = castedData$UNIQUE_ID,
+        method = collapseRow.method,
+        connectivityBasedCollapsing = TRUE,
+        methodFunction = NULL,
+        connectivityPower = 1,
+        selectFewestMissing = collapseRow.selectFewestMissing,
+        thresholdCombine = NA
+    )
 
-        #Set the name of the rows to be the unique ID.
-        rownames(castedData) = castedData$UNIQUE_ID
+    #Coerce the data into a data frame.
+    finalData <- data.frame (finalData$group2row, finalData$datETcollapsed)
 
-        if (nrow(castedData) <= 1) {
-            warning("Only one probe.id present in the data. Probe aggregation not possible.")
-            return (mRNAData)
-        }
+    # rename the columns back to original form
+    colnames(finalData)[2] <- 'UNIQUE_ID'
+    finalData <- merge(finalData,castedData[c('UNIQUE_ID','Row.Label')],by=c('UNIQUE_ID'))
+    finalData <- subset(finalData, select = -c(UNIQUE_ID))
 
-        #Run the collapse on a subset of the data by removing some columns.
-        finalData <- collapseRows(subset(castedData, select = -c(GENE_SYMBOL,PROBE.ID,UNIQUE_ID) ),
-                rowGroup = castedData$GENE_SYMBOL,
-                rowID = castedData$UNIQUE_ID,
-                method = collapseRow.method,
-                connectivityBasedCollapsing = TRUE,
-                methodFunction = NULL,
-                connectivityPower = 1,
-                selectFewestMissing = collapseRow.selectFewestMissing,
-                thresholdCombine = NA)
+    # set the column names again.
+    colnames (finalData)[1] <- "Bio.marker"
 
-        #Coerce the data into a data frame.
-        finalData=data.frame(finalData$group2row, finalData$datETcollapsed)
-
-        #Rename the columns, the selected row_id is the unique_id.
-        colnames(finalData)[2] <- 'UNIQUE_ID'
-
-        #Merge the probe.id back in.
-        finalData <- merge(finalData,castedData[c('UNIQUE_ID','PROBE.ID')],by=c('UNIQUE_ID'))
-
-        #Remove the unique_id and selected row ID column.
-        finalData <- subset(finalData, select = -c(UNIQUE_ID))
-
-        #Melt the data back.
-        finalData <- melt(finalData, id.vars = c("group", "PROBE.ID"))
-
-        #Set the column names again.
-        colnames(finalData) <- c("GENE_SYMBOL","PROBE.ID","PATIENT.ID","VALUE")
-
-        #When we convert to a data frame the numeric columns get an x in front of them. Remove them here.
-        finalData$PATIENT.ID <- sub("^X","",finalData$PATIENT.ID)
-
-        #add a column with the subset number
-        finalData$SUBSET<-finalData$PATIENT.ID
-        finalData$SUBSET[grep("^S1_|_S1_|_S1$",finalData$SUBSET)]<-"S1"
-        finalData$SUBSET[grep("^S2_|_S2_|_S2$",finalData$SUBSET)]<-"S2"
-
-        write.table(finalData, file = output.file, sep = "\t", row.names = FALSE)
-
-        finalData
-    }
+    return (finalData)
+}
 
 
 ### END ###

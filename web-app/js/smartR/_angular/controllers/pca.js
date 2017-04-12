@@ -19,7 +19,8 @@ window.smartRApp.controller('PcaController', [
                 highDimensional: {concepts: [], valid: false}
             },
             button: {
-                disabled: true
+                disabled: true,
+                message: ''
             },
         };
 
