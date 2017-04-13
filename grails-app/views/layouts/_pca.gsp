@@ -33,12 +33,12 @@
         <workflow-tab tab-name="Run Analysis" disabled="runAnalysis.disabled">
            <div class="heim-input-field sr-input-area">
                <div class="heim-input-field">
-                   <input type="checkbox" ng-model="runAnalysis.params.nodeAsVar">
-                   <span>Use experiment/node as variable instead of probe (multiple nodes only)</span>
+                   <input type="checkbox" ng-model="runAnalysis.params.dropMissingSubjects">
+                   <span>Drop subjects with missing data</span>
                </div>
                <div class="heim-input-field">
                    <input type="checkbox" ng-model="runAnalysis.params.calcZScore">
-                   <span>Calculate z-score on the fly</span>
+                   <span>Convert to Z scores z-score on the fly</span>
                </div>
                <div class="heim-input-field">
                    <input type="checkbox" ng-model="runAnalysis.params.aggregateProbes">
