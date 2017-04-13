@@ -39,7 +39,7 @@ trim <- function (x) gsub("^\\s+|\\s+$", "", x)
 
 ## Main:
 
-main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
+main <- function (dropMissingSubjects=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
     # TODO: aggregate probes?
 
     ## Dev & debugging:
@@ -67,12 +67,10 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
         print (fetch_params)
     }
 
-    print (nodeAsVar)
-    print (mode(nodeAsVar))
 
     ## Preconditions & preparation:
-    exprData <- loaded_variables$highDimensional_n0_s1
-    if (nrow (exprData) == 0) {
+    expr_data <- loaded_variables$highDimensional_n0_s1
+    if (nrow (expr_data) == 0) {
         stop ("The input data is empty: either the specified subset
             has no matching data in the selected node, or the
             gene/pathway is not present.");
@@ -82,52 +80,44 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
     # NOTE: at this point, the data columns are:
     # Row.Label, Bio.marker, [patients X1, X2, ...]
 
+    initial_rows <- nrow (expr_data)
+
     # handle options:
     if (aggregateProbes) {
-        exprData <- pca_probe_aggregation (exprData,
-            collapseRow.method = "MaxMean",
-            collapseRow.selectFewestMissing=TRUE
+        expr_data <- pca_probe_aggregation (expr_data,
+            collapse_method="MaxMean",
+            select_fewest_missing=TRUE
         )
     }
 
     if (calcZScore) {
-        # TODO: check for other headers / id columns or consistent in SmartR?
-
-        # need to move into a more useful format:
-        # Row.Label, Bio.marker, PatientID, Value
-        exprData <- melt (rna_data, c('Row.Label', 'Bio.marker'),
-            variable.name="PatientID", value.name="Value")
-
-        exprData <- ddply (exprData, "Row.Label", transform, probe.md=median (Value, na.rm = TRUE))
-        exprData <- ddply (exprData, "Row.Label", transform, probe.sd=sd (Value, na.rm = TRUE))
-
-        exprData$Value = with (exprData, ifelse (probe.sd == 0, 0,
-            (exprData$Value - exprData$probe.md) / exprData$probe.sd))
-            exprData$Value = with (exprData,
-                ifelse (Value > 2.5, 2.5,
-                ifelse (Value < -2.5, -2.5, Value)
-            )
-        )
-        exprData$Value = round (exprData$Value, 9)
-        exprData$probe.md = NULL
-        exprData$probe.sd = NULL
+        expr_data <- convert_to_zscore (expr_data)
     }
 
-    # for poorly curated data, drop columns where there are one or more missing values
-    exprData <- subset (exprData, select = colSums (is.na(exprData))<1)
-    printf ("rows %d cols %d NA columns dropped", nrow(exprData), ncol(exprData))
-    if (ncol (exprData) == 0) {
+    if (dropMissingSubjects) {
+        # for poorly curated data, drop columns where there are one or more missing values
+        expr_data <- subset (expr_data, select = colSums (is.na(expr_data))<1)
+    }
+
+
+    if (ncol (expr_data) == 0) {
         stop ("The selected cohort has incomplete data for each of your biomarkers.
             No data is left to plot a PCA with.");
     }
 
     # actually do the analysis, need purely numeric matrix
-    rownames (exprData) <- paste (exprData$Row.Label, exprData$Bio.marker, sep='_')
-    exprData$Row.Label <- NULL
-    exprData$Bio.marker <- NULL
+    rownames (expr_data) <- paste (expr_data$Row.Label, expr_data$Bio.marker, sep='_')
+    expr_data$Row.Label <- NULL
+    expr_data$Bio.marker <- NULL
     print ("Doing the actual analysis")
-    print (exprData)
-    pca_results <- prcomp (exprData, center=TRUE, scale=TRUE)
+    print (expr_data)
+    pca_results <- prcomp (expr_data, center=TRUE, scale=TRUE)
+
+    # extract useful info
+    summary <- summary (pca_results)
+    importance <- pca_results$importance
+    porp_var <- importance[2,]
+    cum_var  <- importance[3,]
 
     # post-analysis:
     # get the number of components.
@@ -150,55 +140,82 @@ main <- function (nodeAsVar=FALSE, calcZScore=FALSE, aggregateProbes=FALSE) {
     # create json and return
     # Note: can't JSONify the whole prcomp result
     output <- list(
-        analysis = 'pca',
-        data_name = fetch_params$ontologyTerms$highDimensional_n0$name,
-        data_fullname = fetch_params$ontologyTerms$highDimensional_n0$fullName,
+        # NOTE: single numbers are always rendered as list, 'cos they're lists in R
+        # Doesn't seem to be any way around this.
+        params = list (
+            analysisType = 'PCA',
+            dataSource = fetch_params$ontologyTerms$highDimensional_n0$fullName,
+            dropMissingSubjects=dropMissingSubjects,
+            calcZScore=calcZScore,
+            aggregateProbes=aggregateProbes,
+            maximumGenes = MAX_GENE_LIST_LEN,
+            initialRows = initial_rows,
+            rowsWithData = nrow (expr_data)
+        ),
 
-        max_gene_list_len = MAX_GENE_LIST_LEN,
-        component_summary = component_summary,
-        max_pcs_to_show = max_pcs_to_show,
-        sdev = pca_results$sdev,
         numberOfComponents = length (pca_results$sdev),
-        rotation = pca_results$rotation,
-        sdev = pca_results$sdev
+        componentSummary = component_summary,
+        porpVariance <- porp_var
+        cumVariance  <- cum_var
+
+        sdev = pca_results$sdev,
+        pca_rotation = pca_results$rotation,
+        pca_points = pca_results$x
     )
 
     return (toJSON (output))   	
 }
 
 
-pca_probe_aggregation <- function (exprData, collapseRow.method,
-        collapseRow.selectFewestMissing, output.file="aggregated_data.txt") {
+convert_to_zscore <- function (expr_data) {
+    # NOTE: original used median not mean, go figure
 
-    #Create a unique identifier column and row names
-    castedData$UNIQUE_ID <- paste (castedData$Bio.marker, castedData$Row.Label, sep="_")
-    rownames (castedData) = castedData$UNIQUE_ID
+    ## Main:
+    num_df <- subset (expr_data, select = -c(Bio.marker, Row.Label))
 
-    #Run the collapse on a subset of the data by removing some columns.
-    finalData <- collapseRows (
-        subset (castedData, select = -c(Bio.marker, Row.Label, UNIQUE_ID)),
-        rowGroup = castedData$Bio.marker,
-        rowID = castedData$UNIQUE_ID,
-        method = collapseRow.method,
+    # flip so can use scale() on it
+    trans_df <- t (num_df)
+    trans_df <- scale (trans_df, center=TRUE, scale=TRUE)
+
+    # flip back and add back cols
+    rev_df <- t (trans_df)
+    rev_df$Bio.marker <- num_df$Bio.marker
+    rev_df$Row.Label <- num_df$Row.Label
+
+    ## Postconditions & return
+    return (rev_df)
+}
+
+pca_probe_aggregation <- function (expr_data, collapse_method, select_fewest_missing) {
+
+    # NOTE: at this point, the data columns are:
+    # Row.Label, Bio.marker, [patients X1, X2, ...]
+
+    # create a row grouping
+    row_groups <- paste (expr_data$Bio.marker, expr_data$Row.Label, sep="_")
+    row_ids = make.names (expr_data$GROUP, unique=TRUE)
+
+    agg <- collapseRows (
+        # get rid of non-numeric columns
+        subset (expr_data, select = -c(Bio.marker, Row.Label)),
+        rowGroup = row_groups,
+        rowID = row_ids,
+        method = collapse_method,
         connectivityBasedCollapsing = TRUE,
         methodFunction = NULL,
         connectivityPower = 1,
-        selectFewestMissing = collapseRow.selectFewestMissing,
+        selectFewestMissing = select_fewest_missing,
         thresholdCombine = NA
     )
 
-    #Coerce the data into a data frame.
-    finalData <- data.frame (finalData$group2row, finalData$datETcollapsed)
+    # reduce data to the selected rows
+    agg_data <- expr_data[agg$selectedRow,]
 
-    # rename the columns back to original form
-    colnames(finalData)[2] <- 'UNIQUE_ID'
-    finalData <- merge(finalData,castedData[c('UNIQUE_ID','Row.Label')],by=c('UNIQUE_ID'))
-    finalData <- subset(finalData, select = -c(UNIQUE_ID))
+    # NOTE: there was hideously complicated set of manipulations here that
+    # seemed to be unnecessary if you just do things like above. I think.
 
-    # set the column names again.
-    colnames (finalData)[1] <- "Bio.marker"
-
-    return (finalData)
+    ## Postconditions & return:
+    return (agg_data)
 }
 
 
