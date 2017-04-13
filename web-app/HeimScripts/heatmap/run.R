@@ -129,7 +129,7 @@ main <- function(max_rows = 100, sorting = "nodes", ranking = "coef", selections
         "extraFields"         = extraFields.df,
         "features"            = ldd_rownames.vector,
         "maxRows"             = max_rows,
-        "allStatValues"       = statistics_hd.df,
+        "allStatValues"      = statistics_hd.df,
         "warnings"            = c() # initiate empty vector
     )
     
