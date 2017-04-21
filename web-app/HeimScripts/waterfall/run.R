@@ -77,11 +77,25 @@ main <- function (lowRangeValue=NULL, highRangeValue=NULL) {
 
     # name cols on output
     colnames(numData) <- c("Patient ID", "Value")
-    print ("i'm here")
 
     # set display params
     displayLow <- if (is.null (lowRangeValue)) min (numData$Value) - 1 else lowRangeValue
     displayHigh <- if (is.null (highRangeValue)) max (numData$Value) + 1 else highRangeValue
+
+    # classify data
+    valType <- sapply (numData$Value,
+        function (x) {
+            if (x <= displayLow) {
+                return (-1)
+            } else if (displayHigh <= x) {
+                return (1)
+            } else {
+                return (0)
+            }
+        },
+        USE.NAMES=FALSE
+    )
+    numData$valueClass <- valType
 
     ## Postconditions & return:
     output <- list(

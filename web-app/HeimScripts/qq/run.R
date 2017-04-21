@@ -161,8 +161,8 @@ main <- function (dropMissingSubjects=FALSE, calcZScore=FALSE, aggregateProbes=F
 
         numberOfComponents = length (pca_results$sdev),
         componentSummary = component_summary,
-        porpVariance = porp_var,
-        cumVariance = cum_var,
+        porpVariance <- porp_var,
+        cumVariance  <- cum_var,
 
         sdev = pca_results$sdev,
         pca_rotation = pca_results$rotation,
