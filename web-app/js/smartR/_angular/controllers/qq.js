@@ -14,9 +14,8 @@ window.smartRApp.controller('QqController', [
             disabled: false,
             running: false,
             loaded: false,
-            selectedBiomarkers: [],
             conceptBoxes: {
-                highDimensional: {concepts: [], valid: false}
+                datapoints: {concepts: [], valid: false}
             },
             button: {
                 disabled: true,
@@ -26,9 +25,7 @@ window.smartRApp.controller('QqController', [
 
         $scope.runAnalysis = {
             params: {
-                dropMissingSubjects: false,
-                calcZScore: false,
-                aggregateProbes: false
+                includeTable: false
             },
             disabled: true,
             running: false,
@@ -38,19 +35,10 @@ window.smartRApp.controller('QqController', [
         $scope.$watch(
             function() {
                 //return $scope.fetch.conceptBoxes.highDimensional.concepts.length;
-                return $scope.fetch.conceptBoxes.highDimensional.concepts.length + ' ' + $scope.fetch.selectedBiomarkers.length;
+                return $scope.fetch.conceptBoxes.datapoints.concepts.length;
             },
             function() {
-                if ($scope.fetch.conceptBoxes.highDimensional.concepts.length === 0) {
-                    $scope.fetch.button.disabled = true;
-                    $scope.fetch.button.message = 'Please select a high dimensional concept';
-                } else if ($scope.fetch.selectedBiomarkers.length === 0 || $scope.fetch.selectedBiomarkers.length > 10) {
-                    $scope.fetch.button.disabled = true;
-                    $scope.fetch.button.message = 'Please select between 1 and 10 biomarkers for your high dimensional data';
-                } else {
-                    $scope.fetch.button.disabled = false;
-                    $scope.fetch.button.message = '';
-                }
+                // nothing?
             }
         );
 

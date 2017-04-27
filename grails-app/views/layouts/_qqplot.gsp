@@ -6,15 +6,14 @@
     <tab-container>
 
         <workflow-tab tab-name="Fetch Data" disabled="fetch.disabled">
-            <concept-box style="display: inline-block;"
-                         concept-group="fetch.conceptBoxes.highDimensional"
-                         type="HD"
-                         min="1"
-                         max="1"
-                         label="High Dimensional Variables"
-                         tooltip="Select a high dimensional variable for PCA analysis.">
+            <concept-box style="display: inline-block"
+                         concept-group="fetch.conceptBoxes.datapoints"
+                         type="LD-numerical"
+                         min="2"
+                         max="-1"
+                         label="Numerical Variables"
+                         tooltip="Select two or more numerical variables from the tree to compare.">
             </concept-box>
-            <biomarker-selection biomarkers="fetch.selectedBiomarkers"></biomarker-selection>
             <br/>
             <br/>
 
@@ -22,7 +21,6 @@
             <fetch-button concept-map="fetch.conceptBoxes"
                           loaded="fetch.loaded"
                           running="fetch.running"
-                          biomarkers="fetch.selectedBiomarkers"
                           disabled="fetch.button.disabled"
                           message="fetch.button.message"
                           allowed-cohorts="[1]">
@@ -33,18 +31,9 @@
         <workflow-tab tab-name="Run Analysis" disabled="runAnalysis.disabled">
            <div class="heim-input-field sr-input-area">
                <div class="heim-input-field">
-                   <input type="checkbox" ng-model="runAnalysis.params.dropMissingSubjects">
-                   <span>Drop subjects with missing data</span>
+                   <input type="checkbox" ng-model="runAnalysis.params.includeTable">
+                   <span>Include table of data</span>
                </div>
-               <div class="heim-input-field">
-                   <input type="checkbox" ng-model="runAnalysis.params.calcZScore">
-                   <span>Convert to Z scores z-score on the fly</span>
-               </div>
-               <div class="heim-input-field">
-                   <input type="checkbox" ng-model="runAnalysis.params.aggregateProbes">
-                   <span>Aggregate probes</span>
-               </div>
-
            </div>
             <hr class="sr-divider">
             <run-button button-name="Create Plot"
@@ -55,7 +44,7 @@
             </run-button>
             <br/>
             <br/>
-            <pca-plot data="runAnalysis.scriptResults"></pca-plot>
+            <qq-plot data="runAnalysis.scriptResults"></qq-plot>
         </workflow-tab>
 
     </tab-container>
