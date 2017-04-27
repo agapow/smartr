@@ -73,5 +73,8 @@ modules = {
         // waterfall
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'waterfall.js']
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Waterfall.js']
+        // qqplot
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'qq.js']
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Qq.js']
     }
 }

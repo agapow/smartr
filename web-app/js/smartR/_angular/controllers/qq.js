@@ -1,4 +1,4 @@
-//# sourceURL=pca.js
+//# sourceURL=qq.js
 
 'use strict';
 
@@ -20,7 +20,7 @@ window.smartRApp.controller('QqController', [
             button: {
                 disabled: true,
                 message: ''
-            },
+            }
         };
 
         $scope.runAnalysis = {
@@ -34,11 +34,11 @@ window.smartRApp.controller('QqController', [
 
         $scope.$watch(
             function() {
-                //return $scope.fetch.conceptBoxes.highDimensional.concepts.length;
                 return $scope.fetch.conceptBoxes.datapoints.concepts.length;
             },
             function() {
                 // nothing?
+                var dummy = null;
             }
         );
 
