@@ -219,7 +219,7 @@ window.smartRApp.factory('smartRUtils', ['$q', function($q) {
             values =dimension.bottom(Infinity).map(function(record) { return dimension.accessor(record); });
         }
 
-        return values;
+        return values;s
     };
 
     service.toggleLoadingScreen = function(visible) {
@@ -228,3 +228,4 @@ window.smartRApp.factory('smartRUtils', ['$q', function($q) {
 
     return service;
 }]);
+

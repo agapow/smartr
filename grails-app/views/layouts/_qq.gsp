@@ -1,7 +1,7 @@
 
 <script type="text/ng-template" id="qq">
 
-<div ng-controller="QqController">
+<div ng-controller="QqplotController">
 
     <tab-container>
 

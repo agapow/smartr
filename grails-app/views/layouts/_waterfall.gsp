@@ -33,12 +33,14 @@
                     <br>
                     <label for="gsp-waterfall-low-check">Low Range </label>
                     <input id="gsp-waterfall-low-txt-identifier"
-                       ng-pattern="-?\d+(?:\.\d+)?"
+                       type="number"
+                        %{-- ng-pattern="\d+" --}%
                        ng-model="runAnalysis.params.lowRangeValue">
                     <br>
                     <label for="gsp-waterfall-high-check">High Range </label>
                     <input id="gsp-waterfall-high-txt-identifier"
-                       ng-pattern="\d+"
+                        type="number"
+                        %{-- ng-pattern="\d+" --}%
                        ng-model="runAnalysis.params.highRangeValue">
                     <br><br>
                 </fieldset>

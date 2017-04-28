@@ -2,7 +2,7 @@
 
 'use strict';
 
-window.smartRApp.controller('QqController', [
+window.smartRApp.controller('QqplotController', [
     '$scope',
     'smartRUtils',
     'commonWorkflowService',
@@ -34,11 +34,17 @@ window.smartRApp.controller('QqController', [
 
         $scope.$watch(
             function() {
+                //return $scope.fetch.conceptBoxes.highDimensional.concepts.length;
                 return $scope.fetch.conceptBoxes.datapoints.concepts.length;
             },
             function() {
-                // nothing?
-                var dummy = null;
+                if ($scope.fetch.conceptBoxes.datapoints.concepts.length < 2) {
+                    $scope.fetch.button.disabled = true;
+                    $scope.fetch.button.message = 'Please select more concepts';
+                 } else {
+                    $scope.fetch.button.disabled = false;
+                    $scope.fetch.button.message = '';
+                }
             }
         );
 
