@@ -1,8 +1,8 @@
-//# sourceURL=d3Qq.js
+//# sourceURL=d3Marker.js
 
 'use strict';
 
-window.smartRApp.directive('qqPlot', [
+window.smartRApp.directive('markerPlot', [
     'smartRUtils',
     'rServeService',
     '$rootScope',
@@ -22,11 +22,12 @@ window.smartRApp.directive('qqPlot', [
             scope.$watch('data', function () {
                 $(vizDiv).empty();
                 if (! $.isEmptyObject(scope.data)) {
-                    createQqPlot(scope, vizDiv);
+                    createMarkerPlot(scope, vizDiv);
                 }
             });
         }
     };
+
 
     function createQqPlot(scope, root) {
         // SOME TESTING HACK - DO NOT INCLUDE IN RELASE

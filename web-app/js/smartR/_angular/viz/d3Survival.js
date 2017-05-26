@@ -1,8 +1,8 @@
-//# sourceURL=d3Qq.js
+//# sourceURL=d3Survival.js
 
 'use strict';
 
-window.smartRApp.directive('qqPlot', [
+window.smartRApp.directive('survivalPlot', [
     'smartRUtils',
     'rServeService',
     '$rootScope',
@@ -13,7 +13,7 @@ window.smartRApp.directive('qqPlot', [
         scope: {
             data: '='
         },
-        templateUrl: $rootScope.smartRPath +  '/js/smartR/_angular/templates/qq.html',
+        templateUrl: $rootScope.smartRPath +  '/js/smartR/_angular/templates/survival.html',
         link: function (scope, element) {
             var vizDiv = element.children()[0];
             /**
@@ -22,13 +22,14 @@ window.smartRApp.directive('qqPlot', [
             scope.$watch('data', function () {
                 $(vizDiv).empty();
                 if (! $.isEmptyObject(scope.data)) {
-                    createQqPlot(scope, vizDiv);
+                    createSurvivalPlot(scope, vizDiv);
                 }
             });
         }
     };
 
-    function createQqPlot(scope, root) {
+
+    function createSurvivalPlot(scope, root) {
         // SOME TESTING HACK - DO NOT INCLUDE IN RELASE
         var debugField = d3.select(root).append('div');
         debugField.text ("in createQqPlot in d3Qq");

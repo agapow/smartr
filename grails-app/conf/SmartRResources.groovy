@@ -16,6 +16,9 @@ modules = {
         resource url: [plugin: 'smart-r', dir: 'js/resource', file: 'sha256.js' ]
         resource url: [plugin: 'smart-r', dir: 'js/resource', file: 'ng-table.js']
         resource url: [plugin: 'smart-r', dir: 'css', file: 'ng-table.css']
+
+        resource url: [plugin: 'smart-r', dir: 'js/resource', file: 'smartr-common.js']
+
     }
 
     smartR_angular_components {
@@ -66,7 +69,7 @@ modules = {
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'patientmapper.js']
         // IPA connector
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'ipaconnector.js']
-        
+
 	    // boxplot
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'pca.js']
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Pca.js']
@@ -76,5 +79,11 @@ modules = {
         // qqplot
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'qq.js']
         resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Qq.js']
+        // survival
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'survival.js']
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Survival.js']
+        // markerselection
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/controllers', file: 'marker.js']
+        resource url: [plugin: 'smart-r', dir: 'js/smartR/_angular/viz', file: 'd3Marker.js']
     }
 }

@@ -120,7 +120,7 @@ main <- function (dropMissingSubjects=FALSE, calcZScore=FALSE, aggregateProbes=F
     pca_results <- prcomp (expr_data, center=TRUE, scale=TRUE, na.action=na.omit)
 
     # extract useful info
-    summary <- summary (pca_results)
+    pca_summary <- summary (pca_results)
     importance <- pca_results$importance
     porp_var <- importance[2,]
     cum_var  <- importance[3,]
